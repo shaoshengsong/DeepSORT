@@ -1,12 +1,15 @@
 # Deep-SORT
 MOT using deepsort yolo3 with C++
+
 操作系统：Ubuntu 18.04
+
 编译环境：Qt 5.12.2
 
 深度学习的模型分两个，一个是目标检测，一个是目标跟踪
 
 目标检测的模型
 https://pjreddie.com/darknet/yolo/
+用的是OpenCV加载的，所以更换成您想要使用的模型
 
 目标跟踪中特征部分 
 目标跟踪模型 mars-small128 
