@@ -128,8 +128,8 @@ Tensorflow的安装可以参考
 
 
 
-[多目标跟踪论文 Deep SORT 解读](https://flyfish.blog.csdn.net/article/details/89852370)
-[多目标跟踪论文 Deep SORT 实现](https://flyfish.blog.csdn.net/article/details/90034289)
+[多目标跟踪论文 Deep SORT 解读](https://flyfish.blog.csdn.net/article/details/89852370)  
+[多目标跟踪论文 Deep SORT 实现](https://flyfish.blog.csdn.net/article/details/90034289)  
 [多目标跟踪论文 Deep SORT 数据集说明](https://flyfish.blog.csdn.net/article/details/90070639)
 [多目标跟踪论文 Deep SORT 特征提取CNN Architecture](https://flyfish.blog.csdn.net/article/details/90642532)
 [多目标跟踪论文 Deep SORT 特征训练PyTorch实现](https://flyfish.blog.csdn.net/article/details/90702620)             
