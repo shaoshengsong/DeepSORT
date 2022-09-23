@@ -1,22 +1,15 @@
 # DeepSORT
 
-MOT using deepsort yolo5 with C++
+# MOT(Multi-object tracking) using yolov5 with C++ support deepsort and bytetrack
 
-# 多目标跟踪论文 DeepSORT 实现
 
 flyfish
 
 ## 前言
-代码采用C++实现，支持YOLOv5 6.x。
+代码采用C++实现，目标检测支持YOLOv5 6.x,跟踪支持deepsort and bytetrack。
 检测模型可以直接从YOLOv5官网，导出onnx使用
 特征提取可以自己训练，导出onnx使用，onnxruntime cpu 推理，方便使用.
 特征支持自定义维度例如 128,256,512等
-
-原论文地址 
-
-```c
-https://arxiv.org/pdf/1703.07402.pdf
-```
 
 本文源码地址
 
@@ -24,7 +17,26 @@ https://arxiv.org/pdf/1703.07402.pdf
 https://github.com/shaoshengsong/DeepSORT
 ```
 
+## deepsort v1.12
+新增bytetrack跟踪
+
+bytetrack论文
+```c
+http://arxiv.org/abs/2110.06864
+```
+
+bytetrack代码
+```c
+https://github.com/ifzhang/ByteTrack
+```
+
 ## deepsort v1.1
+deepsort原论文地址 
+
+```c
+https://arxiv.org/pdf/1703.07402.pdf
+```
+
 
 ```c
 MOT using deepsort yolo5 with C++
