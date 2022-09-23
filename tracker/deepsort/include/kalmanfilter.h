@@ -1,7 +1,7 @@
 #ifndef KALMANFILTER_H
 #define KALMANFILTER_H
 
-#include "../DeepAppearanceDescriptor/dataType.h"
+#include "dataType.h"
 
 class KalmanFilter
 {

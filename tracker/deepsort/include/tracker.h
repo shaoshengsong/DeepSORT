@@ -5,7 +5,7 @@
 
 #include "kalmanfilter.h"
 #include "track.h"
-#include "../DeepAppearanceDescriptor/model.h"
+#include "model.h"
 
 class NearNeighborDisMetric;
 
