@@ -1,10 +1,9 @@
 #ifndef TRACK_H
 #define TRACK_H
 
-#include "../DeepAppearanceDescriptor/dataType.h"
-
+#include "dataType.h"
 #include "kalmanfilter.h"
-#include "../DeepAppearanceDescriptor/model.h"
+#include "model.h"
 
 class Track
 {

@@ -1,7 +1,7 @@
 #ifndef NN_MATCHING_H
 #define NN_MATCHING_H
 
-#include "../DeepAppearanceDescriptor/dataType.h"
+#include "dataType.h"
 
 #include <map>
 

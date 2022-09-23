@@ -1,16 +1,28 @@
+/*!
+    @Description : https://github.com/shaoshengsong/
+    @Author      : shaoshengsong
+    @Date        : 2022-09-21 05:49:06
+*/
 #pragma once
-#ifndef DATATYPE_H
-#define DATATYPEH
+
 
 #include <cstddef>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
+
+const int k_feature_dim=512;//feature dim
+
+const std::string  k_feature_model_path ="./feature.onnx";
+const std::string  k_detect_model_path ="./yolov5s.onnx";
+
+
 typedef Eigen::Matrix<float, 1, 4, Eigen::RowMajor> DETECTBOX;
 typedef Eigen::Matrix<float, -1, 4, Eigen::RowMajor> DETECTBOXSS;
-typedef Eigen::Matrix<float, 1, 128, Eigen::RowMajor> FEATURE;
-typedef Eigen::Matrix<float, Eigen::Dynamic, 128, Eigen::RowMajor> FEATURESS;
+typedef Eigen::Matrix<float, 1, k_feature_dim, Eigen::RowMajor> FEATURE;
+typedef Eigen::Matrix<float, Eigen::Dynamic, k_feature_dim, Eigen::RowMajor> FEATURESS;
 //typedef std::vector<FEATURE> FEATURESS;
 
 //Kalmanfilter
@@ -38,4 +50,4 @@ typedef struct t{
 typedef Eigen::Matrix<float, -1, -1, Eigen::RowMajor> DYNAMICM;
 
 
-#endif // DATATYPE_H
+

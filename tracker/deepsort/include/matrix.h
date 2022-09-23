@@ -55,7 +55,7 @@ public:
 
 		size_t i = 0, j;
 		for ( auto row = init.begin() ; row != init.end() ; ++row, ++i ) {
-			assert ( row->size() == m_columns && "All rows must have the same number of columns." );
+			assert ( row->size() == m_columns && "Sisyphus all rows must have the same number of columns." );
 			j = 0;
 			for ( auto value = row->begin() ; value != row->end() ; ++value, ++j ) {
 				m_matrix[i][j] = *value;

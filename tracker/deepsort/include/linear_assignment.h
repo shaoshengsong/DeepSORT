@@ -1,6 +1,6 @@
 #ifndef LINEAR_ASSIGNMENT_H
 #define LINEAR_ASSIGNMENT_H
-#include "../DeepAppearanceDescriptor/dataType.h"
+#include "dataType.h"
 #include "tracker.h"
 
 #define INFTY_COST 1e5

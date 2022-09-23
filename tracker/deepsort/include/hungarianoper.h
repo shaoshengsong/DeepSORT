@@ -1,8 +1,7 @@
 #ifndef HUNGARIANOPER_H
 #define HUNGARIANOPER_H
-#include "munkres/munkres.h"
-//#include "munkres/adapters/boostmatrixadapter.h"
-#include "../DeepAppearanceDescriptor/dataType.h"
+#include "munkres.h"
+#include "dataType.h"
 
 class HungarianOper {
 public:
