@@ -19,13 +19,15 @@ find_package(OpenCV 4 REQUIRED )
 include_directories(
     ${OpenCV_INCLUDE_DIRS}/include
     ${CMAKE_SOURCE_DIR}/tracker/deepsort/include
-     ${CMAKE_SOURCE_DIR}/detector/YOLOv5/include
+    ${CMAKE_SOURCE_DIR}/tracker/bytetrack/include
+    ${CMAKE_SOURCE_DIR}/detector/YOLOv5/include
 
     )
 
 
 add_executable(DeepSORT
     detector/YOLOv5/src/YOLOv5Detector.cpp
+
     tracker/deepsort/src/FeatureTensor.cpp
     tracker/deepsort/src/model.cpp
     tracker/deepsort/src/kalmanfilter.cpp
@@ -35,6 +37,13 @@ add_executable(DeepSORT
     tracker/deepsort/src/tracker.cpp
     tracker/deepsort/src/munkres.cpp
     tracker/deepsort/src/hungarianoper.cpp
+
+    tracker/bytetrack/src/BytekalmanFilter.cpp
+    tracker/bytetrack/src/BYTETracker.cpp
+    tracker/bytetrack/src/lapjv.cpp
+    tracker/bytetrack/src/STrack.cpp
+    tracker/bytetrack/src/utils.cpp
+
 
     main.cpp)
 target_link_libraries(DeepSORT PRIVATE "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so" ${OpenCV_LIBS} Eigen3::Eigen)
