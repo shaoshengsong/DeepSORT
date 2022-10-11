@@ -44,6 +44,14 @@ add_executable(DeepSORT
     tracker/bytetrack/src/STrack.cpp
     tracker/bytetrack/src/utils.cpp
 
-
     main.cpp)
 target_link_libraries(DeepSORT PRIVATE "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so" ${OpenCV_LIBS} Eigen3::Eigen)
+
+
+
+
+add_executable(test_detector
+    detector/YOLOv5/src/YOLOv5Detector.cpp
+
+    test_detector.cpp)
+target_link_libraries(test_detector PRIVATE  ${OpenCV_LIBS} Eigen3::Eigen)
