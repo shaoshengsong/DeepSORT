@@ -6,7 +6,7 @@
 flyfish
 
 ## 前言
-代码采用C++实现，目标检测支持YOLOv5 6.x,跟踪支持deepsort and bytetrack。
+代码采用C++实现，目标检测支持YOLOv5 6.2,跟踪支持deepsort and bytetrack。
 检测模型可以直接从YOLOv5官网，导出onnx使用
 特征提取可以自己训练，导出onnx使用，onnxruntime cpu 推理，方便使用.
 特征支持自定义维度例如 128,256,512等
