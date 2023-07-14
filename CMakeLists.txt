@@ -6,13 +6,9 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package (Eigen3 REQUIRED NO_MODULE)
 
 
-set(ONNXRUNTIME_DIR "/home/a/lib/onnxruntime-linux-x64-1.12.1")
-
-include_directories("${ONNXRUNTIME_DIR}/include"
-    )
 find_package(OpenCV 4 REQUIRED )
 
 
@@ -45,7 +41,7 @@ add_executable(DeepSORT
     tracker/bytetrack/src/utils.cpp
 
     main.cpp)
-target_link_libraries(DeepSORT PRIVATE "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so" ${OpenCV_LIBS} Eigen3::Eigen)
+target_link_libraries(DeepSORT PRIVATE ${OpenCV_LIBS} Eigen3::Eigen)
 
 
 
