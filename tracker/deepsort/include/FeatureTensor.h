@@ -16,12 +16,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept> 
-#include <onnxruntime_cxx_api.h>
 #include "opencv2/opencv.hpp"
-#include "opencv2/core/core.hpp"
-#include <opencv2/dnn/dnn.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
 typedef unsigned char uint8;
 
 template <typename T>
@@ -50,7 +45,6 @@ class FeatureTensor
 public:
     static FeatureTensor *getInstance();
     bool getRectsFeature(const cv::Mat &img, DETECTIONS &d);
-    void preprocess(cv::Mat &imageBGR, std::vector<float> &inputTensorValues, size_t &inputTensorSize);
 
 private:
     FeatureTensor();
@@ -60,26 +54,10 @@ private:
     bool init();
     ~FeatureTensor();
 
-    void tobuffer(const std::vector<cv::Mat> &imgs, uint8 *buf);
-
+    void preprocess(cv::Mat &imageBGR);
 public:
-    void test();
-
     static constexpr const int width_ = 64;
     static constexpr const int height_ = 128;
 
-    std::array<float, width_ * height_> input_image_{};
-
-    std::array<float, k_feature_dim> results_{};
-
-    Ort::Env env;
-    Ort::Session session_{env, k_feature_model_path.c_str(), Ort::SessionOptions{nullptr}};
-
-    Ort::Value input_tensor_{nullptr};
-    std::array<int64_t, 4> input_shape_{1, 3, width_, height_};
-
-    Ort::Value output_tensor_{nullptr};
-    std::array<int64_t, 2> output_shape_{1, k_feature_dim};
-
-    std::vector<int64_t> inputDims_;
+    cv::dnn::Net net;
 };

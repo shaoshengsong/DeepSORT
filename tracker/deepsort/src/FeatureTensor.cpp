@@ -41,22 +41,12 @@ FeatureTensor::~FeatureTensor()
 bool FeatureTensor::init()
 {
 
-    Ort::TypeInfo inputTypeInfo = session_.GetInputTypeInfo(0);
-    auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
-
-    ONNXTensorElementDataType inputType = inputTensorInfo.GetElementType();
-    std::cout << "Input Type: " << inputType << std::endl;
-
-    inputDims_ = inputTensorInfo.GetShape();
-    std::cout << "Input Dimensions: " << inputDims_ << std::endl; // [-1, 3, 128, 64]
-    inputDims_[0] = 1;
+    this->net = cv::dnn::readNetFromONNX(k_feature_model_path);
     std::cout << "FeatureTensor::init() " << std::endl;
-
-
     return true;
 }
 
-void FeatureTensor::preprocess(cv::Mat &imageBGR, std::vector<float> &inputTensorValues, size_t &inputTensorSize)
+void FeatureTensor::preprocess(cv::Mat &imageBGR)
 {
 
     // pre-processing the Image
@@ -65,9 +55,9 @@ void FeatureTensor::preprocess(cv::Mat &imageBGR, std::vector<float> &inputTenso
 
     // step 2: Resize the image.
     cv::Mat resizedImageBGR, resizedImageRGB, resizedImage, preprocessedImage;
-       cv::resize(imageBGR, resizedImageBGR,
-                  cv::Size(inputDims_.at(3), inputDims_.at(2)),
-                  cv::InterpolationFlags::INTER_CUBIC);
+    cv::resize(imageBGR, resizedImageBGR,
+                cv::Size(width_, height_),
+                cv::InterpolationFlags::INTER_CUBIC);
 
     // cv::resize(imageBGR, resizedImageBGR,
     //            cv::Size(64, 128));
@@ -96,11 +86,7 @@ void FeatureTensor::preprocess(cv::Mat &imageBGR, std::vector<float> &inputTenso
     // step 8: Convert the image to CHW RGB float format.
     // HWC to CHW
     cv::dnn::blobFromImage(resizedImage, preprocessedImage);
-    inputTensorSize = vectorProduct(inputDims_);
-    inputTensorValues.assign(preprocessedImage.begin<float>(),
-                             preprocessedImage.end<float>());
-
-    std::cout << "inputTensorSize:" << inputTensorValues.size() << std::endl;
+    this->net.setInput(preprocessedImage);
 }
 
 bool FeatureTensor::getRectsFeature(const cv::Mat &img, DETECTIONS &d)
@@ -118,72 +104,16 @@ bool FeatureTensor::getRectsFeature(const cv::Mat &img, DETECTIONS &d)
         rc.height = (rc.y + rc.height <= img.rows ? rc.height : (img.rows - rc.y));
 
         cv::Mat mattmp = img(rc).clone();
+        preprocess(mattmp);
 
-        std::vector<float> inputTensorValues;
-        size_t inputTensorSize;
-        preprocess(mattmp, inputTensorValues, inputTensorSize);
+        cv::Mat preds = this->net.forward("output");
+        auto *ptr = preds.ptr<float>(0);
 
-        const char *input_names[] = {"input"};   //输入节点名
-        const char *output_names[] = {"output"}; //输出节点名
-
-        auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeDefault);
-        output_tensor_ = Ort::Value::CreateTensor<float>(memory_info, results_.data(), results_.size(), output_shape_.data(), output_shape_.size());
-
-        std::vector<Ort::Value> inputTensors;
-        inputTensors.push_back(Ort::Value::CreateTensor<float>(
-            memory_info, inputTensorValues.data(), inputTensorSize, inputDims_.data(),
-            inputDims_.size()));
-
-
-        session_.Run(Ort::RunOptions{nullptr}, input_names, inputTensors.data(), 1, output_names, &output_tensor_, 1);
-     
-        Ort::TensorTypeAndShapeInfo shape_info = output_tensor_.GetTensorTypeAndShapeInfo();
-
-
-        size_t dim_count = shape_info.GetDimensionsCount();
-        std::cout << "dim_count:" << dim_count << std::endl;
-
-  
-        int64_t dims[2];
-        shape_info.GetDimensions(dims, sizeof(dims) / sizeof(dims[0]));
-        std::cout << "output shape:" << dims[0] << "," << dims[1] << std::endl;
-
-
-        float *f = output_tensor_.GetTensorMutableData<float>();
-        for (int i = 0; i < dims[1]; i++) //sisyphus
+        for (int i = 0; i < preds.cols; i++)
         {
-            dbox.feature[i] = f[i];
+            dbox.feature[i] = ptr[i];
         }
     }
 
     return true;
-}
-
-void FeatureTensor::tobuffer(const std::vector<cv::Mat> &imgs, uint8 *buf)
-{
-    int pos = 0;
-    for (const cv::Mat &img : imgs)
-    {
-        int Lenth = img.rows * img.cols * 3;
-        int nr = img.rows;
-        int nc = img.cols;
-        if (img.isContinuous())
-        {
-            nr = 1;
-            nc = Lenth;
-        }
-        for (int i = 0; i < nr; i++)
-        {
-            const uchar *inData = img.ptr<uchar>(i);
-            for (int j = 0; j < nc; j++)
-            {
-                buf[pos] = *inData++;
-                pos++;
-            }
-        } // end for
-    }     // end imgs;
-}
-void FeatureTensor::test()
-{
-    return;
 }
