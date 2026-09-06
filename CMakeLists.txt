@@ -1,57 +1,72 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
+project(DeepTracker LANGUAGES CXX)
 
-project(DeepSORT LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---- Dependency paths (third-party libs live under external/, adjust per machine) ----
+set(OPENCV_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/external/opencv/build" CACHE PATH "OpenCV build dir (contains OpenCVConfig.cmake)")
+set(ORT_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/external/onnxruntime" CACHE PATH "ONNX Runtime directory")
+set(CANKAO_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/reference/cankao" CACHE PATH "Reference (cankao) source directory")
 
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+# ---- OpenCV ----
+set(OpenCV_DIR "${OPENCV_DIR}")
+find_package(OpenCV REQUIRED)
 
+# ---- ONNX Runtime ----
+if(NOT EXISTS "${ORT_DIR}/include/onnxruntime_cxx_api.h")
+    message(FATAL_ERROR "ONNX Runtime headers not found, check ORT_DIR: ${ORT_DIR}")
+endif()
+include_directories("${ORT_DIR}/include")
+link_directories("${ORT_DIR}/lib")
 
-set(ONNXRUNTIME_DIR "/home/a/lib/onnxruntime-linux-x64-1.12.1")
+# ---- Project include directories ----
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/core)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/detector)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 
-include_directories("${ONNXRUNTIME_DIR}/include"
-    )
-find_package(OpenCV 4 REQUIRED )
+# ---- Sources ----
+file(GLOB_RECURSE CORE_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/detector/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reid/*.cpp)
+# The linear-assignment solver (LAPJV) is provided in-tree at
+# src/core/lap_solver.cpp and picked up by the GLOB_RECURSE above;
+# no external cankao implementation is required.
 
+# ---- Static library ----
+add_library(deeptracker STATIC ${CORE_SRC})
+target_include_directories(deeptracker
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${OpenCV_INCLUDE_DIRS}
+        ${ORT_DIR}/include)
+target_link_libraries(deeptracker PUBLIC ${OpenCV_LIBS} onnxruntime)
 
-include_directories(
-    ${OpenCV_INCLUDE_DIRS}/include
-    ${CMAKE_SOURCE_DIR}/tracker/deepsort/include
-    ${CMAKE_SOURCE_DIR}/tracker/bytetrack/include
-    ${CMAKE_SOURCE_DIR}/detector/YOLOv5/include
+# ---- Demo executable ----
+add_executable(track_demo ${CMAKE_CURRENT_SOURCE_DIR}/src/app/cli/track_demo.cpp)
+target_link_libraries(track_demo PRIVATE deeptracker)
 
-    )
+# ---- GUI executable (Win32, runs by double-click) ----
+add_executable(track_gui WIN32
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/gui/track_gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app/gui/track_gui.rc)
+target_link_libraries(track_gui PRIVATE deeptracker)
 
+# ---- Runtime resource copy (models / configs) next to the executable,
+#      so the output is self-contained and runs by double-click ----
+set(_BIN_DIR "$<TARGET_FILE_DIR:track_gui>")
+set(_SRC "${CMAKE_CURRENT_SOURCE_DIR}")
+# Tracker parameters are compiled in (TrackerConfig::defaults_for); only the
+# ONNX models need to be copied next to the executable.
+add_custom_command(TARGET track_gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${_BIN_DIR}/models"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_SRC}/models/yolo26s.onnx" "${_BIN_DIR}/models/yolo26s.onnx"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_SRC}/models/yolo26s-reid.onnx" "${_BIN_DIR}/yolo26s-reid.onnx"
+    COMMENT "Copying models to the output directory")
 
-add_executable(DeepSORT
-    detector/YOLOv5/src/YOLOv5Detector.cpp
-
-    tracker/deepsort/src/FeatureTensor.cpp
-    tracker/deepsort/src/model.cpp
-    tracker/deepsort/src/kalmanfilter.cpp
-    tracker/deepsort/src/linear_assignment.cpp
-    tracker/deepsort/src/nn_matching.cpp
-    tracker/deepsort/src/track.cpp
-    tracker/deepsort/src/tracker.cpp
-    tracker/deepsort/src/munkres.cpp
-    tracker/deepsort/src/hungarianoper.cpp
-
-    tracker/bytetrack/src/BytekalmanFilter.cpp
-    tracker/bytetrack/src/BYTETracker.cpp
-    tracker/bytetrack/src/lapjv.cpp
-    tracker/bytetrack/src/STrack.cpp
-    tracker/bytetrack/src/utils.cpp
-
-    main.cpp)
-target_link_libraries(DeepSORT PRIVATE "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so" ${OpenCV_LIBS} Eigen3::Eigen)
-
-
-
-
-add_executable(test_detector
-    detector/YOLOv5/src/YOLOv5Detector.cpp
-
-    test_detector.cpp)
-target_link_libraries(test_detector PRIVATE  ${OpenCV_LIBS} Eigen3::Eigen)
+# ---- DLL deployment note ----
+message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
+message(STATUS "ORT lib dir : ${ORT_DIR}/lib")
+message(STATUS "Before running, copy onnxruntime.dll and opencv_world*.dll next to the executable")

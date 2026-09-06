@@ -1,0 +1,32 @@
+#include <winres.h>
+#include "track_gui.h"
+
+IDD_MAIN DIALOGEX 12, 12, 500, 444
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "DeepTracker Video Tracker"
+FONT 9, "Microsoft YaHei", 400, 0, 0x1
+BEGIN
+    LTEXT           "Video file:", -1, 12, 18, 60, 14
+    EDITTEXT        IDC_VIDEO_EDIT, 76, 14, 316, 22, ES_AUTOHSCROLL | WS_BORDER
+    PUSHBUTTON      "Select video...", IDC_VIDEO_BTN, 400, 13, 88, 24
+
+    LTEXT           "Output video:", -1, 12, 48, 60, 14
+    EDITTEXT        IDC_OUT_EDIT, 76, 44, 316, 22, ES_AUTOHSCROLL | WS_BORDER
+    PUSHBUTTON      "Select output...", IDC_OUT_BTN, 400, 43, 88, 24
+
+    AUTOCHECKBOX    "Enable object tracking (uncheck to show detections only, no track IDs assigned)", IDC_TRACK_CHK, 12, 78, 476, 18
+
+    LTEXT           "Confidence:", -1, 12, 108, 48, 14
+    EDITTEXT        IDC_CONF_EDIT, 64, 104, 64, 22, ES_AUTOHSCROLL | WS_BORDER
+    LTEXT           "Class ID (-1=all):", -1, 156, 108, 110, 14
+    EDITTEXT        IDC_CLASS_EDIT, 272, 104, 64, 22, ES_AUTOHSCROLL | WS_BORDER
+    AUTOCHECKBOX    "Show live preview", IDC_PREVIEW_CHK, 356, 106, 132, 18
+
+    PUSHBUTTON      "Start", IDC_RUN_BTN, 396, 138, 92, 28
+    PUSHBUTTON      "Stop", IDC_STOP_BTN, 296, 138, 84, 28
+
+    LTEXT           "", IDC_PROGRESS, 12, 144, 280, 16
+
+    EDITTEXT        IDC_LOG, 12, 180, 476, 228, ES_MULTILINE | ES_READONLY | WS_VSCROLL | WS_BORDER
+    LTEXT           "DeepTracker - core tracking by shaoshengsong", IDC_ABOUT, 12, 420, 476, 14
+END

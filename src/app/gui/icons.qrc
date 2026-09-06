@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icons/title_theme.png</file>
+        <file>icons/btn_play.png</file>
+        <file>icons/btn_stop.png</file>
+        <file>icons/btn_folder.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,15 @@
+build/
+external/
+
+
+
+# pdb调试符号文件
+*.pdb
+# dll二进制库（如果不需要提交源码库）
+*.dll
+
+# vs中间文件
+*.obj
+*.ilk
+*.exe
+*.lib

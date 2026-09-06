@@ -1,160 +1,87 @@
-# DeepSORT
+# DeepTracker
 
-# MOT(Multi-object tracking) using yolov5 with C++ support deepsort and bytetrack
+Real-time multi-object tracking for video, written in C++17 with Qt 6, OpenCV and ONNX Runtime. A YOLO detector feeds one of four classic tracking algorithms behind a single C++ interface, with a Qt desktop application for interactive use and a command-line demo for scripting.
 
+> To try it immediately, run `build\track_gui_qt.exe`, choose a video, and press **Start tracking** — live preview, bounding boxes, track IDs and trajectory trails appear as the video plays.
+## Look
+![](./assets/main.jpg)
+## Tracking Algorithms
 
-flyfish
+All trackers implement the same thin `ITracker` interface (`update` / `reset` / `frame_id`), so switching algorithms is a one-line change.
 
-## 前言
-代码采用C++实现，目标检测支持YOLOv5 6.2,跟踪支持deepsort and bytetrack。
-检测模型可以直接从YOLOv5官网，导出onnx使用
-特征提取可以自己训练，导出onnx使用，onnxruntime cpu 推理，方便使用.
-特征支持自定义维度例如 128,256,512等
+| Tracker | Association | ReID | Description |
+|---|---|---|---|
+| **ByteTrack** | Motion (IoU + confidence) | No | Two-stage association: high-score detections are matched first, then low-score leftovers recover tracks briefly lost to occlusion. |
+| **OC-SORT** | Motion (observation-centric) | No | Observation-Centric SORT built from OCM (velocity-direction cost), OCR (re-association with the last observation) and ORU (virtual observation back-fill on re-acquisition). Handles occlusion and motion blur without any appearance model. |
+| **Deep OC-SORT** | Motion + appearance | Optional | OC-SORT augmented with ReID feature fusion and Global Motion Compensation (GMC) for moving-camera footage. ReID engages automatically when the model file is present, otherwise it runs as plain OC-SORT. |
+| **DeepSORT** | Appearance + motion | Required | A faithful implementation of Wojke et al., ICIP 2017: age-ordered cascade matching, a feature gallery of the last 100 frames matched by minimum cosine distance, squared-Mahalanobis motion gating (χ², 4 dof = 9.4877), and a second IoU association stage for tentative and just-lost tracks. Falls back to ByteTrack when no ReID model is available. |
 
-本文源码地址
+Every tracker follows the same track lifecycle: a new track starts **tentative**, is confirmed after `n_init = 3` consecutive associations, is kept alive while lost up to `track_buffer = 30` frames, and association never crosses object classes.
 
-```c
-https://github.com/shaoshengsong/DeepSORT
-```
+## Architecture
 
-## deepsort v1.12
-新增bytetrack跟踪
+- **`ITracker`** — the minimal interface shared by every algorithm (`update` / `reset` / `frame_id`).
+- **`BaseTracker`** — a template-method pipeline (detection split → predict → first association → recovery → second association → unconfirmed association → new-track init → pool merge). ByteTrack, OC-SORT and Deep OC-SORT are policy combinations on this pipeline through virtual hooks.
+- **`DeepSortTracker`** — a self-contained algorithm with its own cascade-matching loop; it implements `ITracker` directly rather than inheriting the shared pipeline.
+- **Association utilities** — IoU/embedding distance matrices, score fusion, and a Jonker–Volgenant (LAPJV) linear assignment solver.
+- **Filtering** — a constant-velocity Kalman filter on the `[cx, cy, aspect, height]` state for all trackers.
 
-bytetrack论文
-```c
-http://arxiv.org/abs/2110.06864
-```
+Detection and appearance features run through ONNX Runtime, so models are plain `.onnx` files that can be upgraded without recompiling. Inference defaults to the CPU execution provider; CUDA, DirectML, OpenVINO and other providers can be selected without touching the tracking code.
 
-bytetrack代码
-```c
-https://github.com/ifzhang/ByteTrack
-```
-
-## deepsort v1.1
-deepsort原论文地址 
-
-```c
-https://arxiv.org/pdf/1703.07402.pdf
-```
-
-
-```c
-MOT using deepsort yolo5 with C++
-```
-
-操作系统：Ubuntu 18.04
-### 版本更新说明
-
-去除了TensorFlow依赖
-为了不依赖硬件GPU，无需cuda，cudnn，更容易编译，使用PC版本。
-为了更方便编译，采用CMakeList.txt。
-
-
-### 依赖的库
-opencv，可以下载opencv-4.6编译安装
-Eigen3安装
-
-```c
-sudo apt-get install libeigen3-dev
-```
-
-onnxruntime，可以直接解压使用，无需编译
-目标检测模型下载地址
-
-```c
-https://github.com/ultralytics/yolov5
-```
-
-网盘中有已经导出完成的模型
-
-### 文件下载
-百度网盘 
-链接：`https://pan.baidu.com/s/1igjNK2ty-H5AU_Ut08pkoA` 
-提取码：0000
-内容包括
-
-```c
-cmake-3.21.4-linux-x86_64.tar.gz  
-onnxruntime-linux-x64-1.12.1.tgz
-coco_80_labels_list.txt           
-opencv-4.6.0.zip
-DeepSORT                          
-yolov5s.onnx
-feature.onnx                      
-yolov5x.onnx
-```
-
-
-### 使用方法
-#### 1 onnxruntime
-设置自己的onnxruntime的解压目录
+## Directory Layout
 
 ```
-set(ONNXRUNTIME_DIR "/home/a/lib/onnxruntime-linux-x64-1.12.1")
+DeepTracker/
+├── src/
+│   ├── core/        # trackers, Kalman filter, LAPJV solver, GMC, track objects, config presets
+│   ├── detector/    # ONNX YOLO detector (letterbox preprocess, output decode, NMS)
+│   ├── reid/        # ONNX appearance encoder (L2-normalized embeddings)
+│   ├── app/gui/     # Qt application (deeptracker_gui.pro) and a legacy Win32 demo
+│   └── app/cli/     # track_demo.cpp command-line demo
+├── models/          # yolo26s.onnx (detection), yolo26s-reid.onnx (appearance)
+├── data/            # sample videos
+├── scripts/         # export_yolo26_onnx.py (PyTorch -> ONNX)
+└── external/        # prebuilt OpenCV and ONNX Runtime (not committed)
 ```
 
+## Building
 
-#### 2 模型配置
-以下三项根据自己的需要更改
-文件`tracker/deepsort/include/dataType.h`
-```c
-const int k_feature_dim=512;//feature dim
-const std::string  k_feature_model_path ="./feature.onnx";
-const std::string  k_detect_model_path ="./yolov5s.onnx";
+1. Install **Visual Studio 2022** (MSVC v143, x64) and **Qt 6.9.x** with the MSVC 2022 64-bit kit.
+2. Place OpenCV and ONNX Runtime under `external/` (`external/opencv/build`, `external/onnxruntime`).
+3. Double-click **`src/app/gui/deeptracker_gui.pro`** to open it in Qt Creator, then click **Build** and **Run**.
+
+The executable is deployed to `build\` together with the required DLLs and models; that folder is portable and can be copied anywhere. All paths in the `.pro` file are relative, so the project builds from any location.
+
+## Usage
+
+1. Run `build\track_gui_qt.exe`.
+2. Pick an input video (for example `data\people_walking.mp4`); the output path is filled in automatically.
+3. Choose a tracker, confidence threshold and object class; for Deep OC-SORT you can also select a GMC method (`none`, `sparseOptFlow`, `orb`, `sift`, `ecc`) for moving cameras.
+4. Press **Start tracking**. The progress bar reports frame progress and active track count, and the log panel records model loading and tracker selection.
+5. The palette button in the title bar switches between color themes (the choice is remembered).
+
+Models are discovered automatically next to the executable (`models\`, searching upward through parent directories). The command-line demo offers the same functionality headlessly:
+
+```
+track_demo --tracker deepsort --source video.mp4 --out result.mp4
 ```
 
-#### 3 主函数
-选择打开视频文件或者视频流等
+Supported `--tracker` values: `bytetrack`, `ocsort`, `deepocsort`, `deepsort`.
 
-```c
-cv::VideoCapture capture("./1.mp4");
-```
+## Models
 
-### 扩展方式
-1 整体分为两部分，新增检测模块放置detector文件夹，新增跟踪模块放置tracker文件夹
+| File | Purpose |
+|---|---|
+| `models\yolo26s.onnx` | YOLO detector, 640×640 input (person class by default) |
+| `models\yolo26s-reid.onnx` | Appearance encoder producing L2-normalized embeddings |
 
-## deepsort v1.0
-### MOT using deepsort yolo3 with C++
-操作系统：Ubuntu 18.04
-编译环境：Qt 5.12.2
-深度学习的模型分两块，一个是目标检测，另一个是目标跟踪
-#### 目标检测的模型
-地址：`https://pjreddie.com/darknet/yolo/`
+Tracker parameters live as compiled-in presets in `src/core/tracker_config.cpp` (`TrackerConfig::defaults_for`) — confidence gates, track buffer, association thresholds, GMC method and ReID settings. Tune a preset and rebuild to change behavior.
 
+## Credits
 
-#### 目标跟踪模型
-mars-small128 
-OpenCV DNN加载YOLO模型，不依赖Darknet库，cuda，cudnn
-依赖Tensorflow，目标跟踪的特征部分使用TensorFlow C++的api。
-
-OpenCV的安装可以参考
-
-
-地址:  `https://blog.csdn.net/flyfish1986/article/details/89157368`
-
-
-Tensorflow的安装可以参考
-
-地址：`https://blog.csdn.net/flyfish1986/article/details/89406211`
-
-
-
-
-[多目标跟踪论文 Deep SORT 解读](https://flyfish.blog.csdn.net/article/details/89852370)  
-[多目标跟踪论文 Deep SORT 实现](https://flyfish.blog.csdn.net/article/details/90034289)  
-[多目标跟踪论文 Deep SORT 数据集说明](https://flyfish.blog.csdn.net/article/details/90070639) 
-[多目标跟踪论文 Deep SORT 特征提取CNN Architecture](https://flyfish.blog.csdn.net/article/details/90642532)  
-[多目标跟踪论文 Deep SORT 特征训练PyTorch实现](https://flyfish.blog.csdn.net/article/details/90702620)              
-[多目标跟踪论文 Deep SORT 特征训练TensorFlow实现](https://flyfish.blog.csdn.net/article/details/90379444)  
-[多目标跟踪论文 Deep SORT 评测指标](https://flyfish.blog.csdn.net/article/details/90200171)  
-[匈牙利算法](https://flyfish.blog.csdn.net/article/details/104298521)  
-[卡尔曼滤波 - 方程组转换为矩阵形式](https://flyfish.blog.csdn.net/article/details/118635703)  
-[卡尔曼滤波 - 一个方程背后的样子](https://flyfish.blog.csdn.net/article/details/118636055)  
-[卡尔曼滤波 - 匀变速直线运动](https://flyfish.blog.csdn.net/article/details/118613382)  
-[卡尔曼滤波 - 冥冥之中自有定数的正态分布](https://flyfish.blog.csdn.net/article/details/116067569)  
-[卡尔曼滤波 - 数据融合 data fusion](https://flyfish.blog.csdn.net/article/details/118613307)  
-[卡尔曼滤波 - 当前均值与上一次均值的关系](https://flyfish.blog.csdn.net/article/details/117931292)  
-[卡尔曼滤波 - 状态空间模型](https://flyfish.blog.csdn.net/article/details/118636364)  
-[卡尔曼滤波 - 5个公式出现的顺序](https://flyfish.blog.csdn.net/article/details/118709808)  
+- DeepSORT — Wojke et al., ICIP 2017
+- ByteTrack — Zhang et al., ECCV 2022
+- OC-SORT — Cao et al., ECCV 2023
+- Deep OC-SORT — Maggiolino et al., 2023
 
 
